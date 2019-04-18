@@ -9,7 +9,7 @@ c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../l
 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/../../../../arm-none-eabi/lib/thumb/v6-m\libc_nano.a(lib_a-memset.o)
                               c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/../../../../arm-none-eabi/lib/thumb/v6-m/crt0.o (memset)
 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/thumb/v6-m\libgcc.a(_thumb1_case_shi.o)
-                              C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o (__gnu_thumb1_case_shi)
+                              C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o (__gnu_thumb1_case_shi)
 
 Allocating common symbols
 Common symbol       size              file
@@ -104,7 +104,7 @@ LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
 LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/thumb/v6-m/crtbegin.o
 LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/../../../../arm-none-eabi/lib/thumb/v6-m/crt0.o
 LOAD Device_Startup/startup_samd11.o
-LOAD C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
+LOAD C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
 LOAD main.o
 LOAD usb_descriptors.o
 START GROUP
@@ -125,10 +125,10 @@ LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
 .text           0x00000000       0x60
  FILL mask 0xff
  *(.vectors)
- .vectors       0x00000000        0x8 C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
+ .vectors       0x00000000        0x8 C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
                 0x00000000                vectors
  *(.romfunc)
- .romfunc       0x00000008       0x58 C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
+ .romfunc       0x00000008       0x58 C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
                 0x00000008                irq_handler_reset
  *(.romfunc.*)
                 0x00000060                . = ALIGN (0x4)
@@ -164,34 +164,34 @@ LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
 .uninit_RESERVED
  *(.bss.$RESERVED*)
 
-.data           0x20000000      0x3a0
+.data           0x20000000      0x398
  FILL mask 0xff
                 0x20000000                _data = .
  *(.ram_vectors)
  *(.text*)
- .text          0x20000000       0x3c C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
- .text.startup  0x2000003c      0x30c C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
+ .text          0x20000000       0x3c C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
+ .text.startup  0x2000003c      0x304 C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
                 0x2000003c                main
- .text          0x20000348       0x14 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/thumb/v6-m\libgcc.a(_thumb1_case_shi.o)
-                0x20000348                __gnu_thumb1_case_shi
+ .text          0x20000340       0x14 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/thumb/v6-m\libgcc.a(_thumb1_case_shi.o)
+                0x20000340                __gnu_thumb1_case_shi
  *(.rodata)
  *(.rodata.*)
  *(vtable)
  *(.data*)
- .data          0x2000035c       0x44 C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
-                0x200003a0                . = ALIGN (0x4)
-                0x200003a0                _edata = .
+ .data          0x20000354       0x44 C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
+                0x20000398                . = ALIGN (0x4)
+                0x20000398                _edata = .
 
-.igot.plt       0x200003a0        0x0
- .igot.plt      0x200003a0        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/thumb/v6-m/crtbegin.o
+.igot.plt       0x20000398        0x0
+ .igot.plt      0x20000398        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/thumb/v6-m/crtbegin.o
 
-.bss            0x200003a0      0x188
-                0x200003a0                _bss = .
+.bss            0x20000398      0x188
+                0x20000398                _bss = .
  *(.bss*)
- .bss           0x200003a0      0x188 C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
+ .bss           0x20000398      0x188 C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
  *(COMMON)
-                0x20000528                . = ALIGN (0x4)
-                0x20000528                _ebss = .
+                0x20000520                . = ALIGN (0x4)
+                0x20000520                _ebss = .
                 [!provide]                PROVIDE (_end, .)
                 0x20000ffc                PROVIDE (_stack_top, (__top_ram - 0x0))
 OUTPUT(d1_1k_bootloader.elf elf32-littlearm)
@@ -201,10 +201,10 @@ OUTPUT(d1_1k_bootloader.elf elf32-littlearm)
  .ARM.attributes
                 0x00000000       0x1e c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/thumb/v6-m/crti.o
  .ARM.attributes
-                0x0000001e       0x30 C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
+                0x0000001e       0x30 C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
  .ARM.attributes
                 0x0000004e       0x1e c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.3.1/thumb/v6-m\libgcc.a(_thumb1_case_shi.o)
 
 .comment        0x00000000       0x59
- .comment       0x00000000       0x59 C:\Users\theom\AppData\Local\Temp\cciWKW2Y.ltrans0.ltrans.o
+ .comment       0x00000000       0x59 C:\Users\theom\AppData\Local\Temp\ccDkqwzn.ltrans0.ltrans.o
                                  0x5a (size before relaxing)

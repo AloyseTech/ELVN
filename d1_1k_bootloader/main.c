@@ -1,34 +1,34 @@
 /*
- * 1kByte USB DFU bootloader for Atmel SAMD11 microcontrollers
- *
- * Copyright (c) 2019, Théo Meyer <meyertheopro@gmail.com>
- * Copyright (c) 2018, Peter Lawrence
- * Copyright (c) 2016, Alex Taradov <alex@taradov.com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+* 1kByte USB DFU bootloader for Atmel SAMD11 microcontrollers
+*
+* Copyright (c) 2019, Theo Meyer <meyertheopro@gmail.com>
+* Copyright (c) 2018, Peter Lawrence
+* Copyright (c) 2016, Alex Taradov <alex@taradov.com>
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
+* 2. Redistributions in binary form must reproduce the above copyright
+*    notice, this list of conditions and the following disclaimer in the
+*    documentation and/or other materials provided with the distribution.
+* 3. The name of the author may not be used to endorse or promote products
+*    derived from this software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #include "stddef.h"
 #include "sam.h"
@@ -270,7 +270,7 @@ static void USB_Service(void)
 /* Magic marker at a specific place in RAM (see BL_ENTRY_ON_MAGIC_ADDR) */
 #define BL_ENTRY_ON_MAGIC_NUM		0xf02669ef
 /* Reset "double tap" */
-//#define BL_ENTRY_ON_DOUBLE_RST
+#define BL_ENTRY_ON_DOUBLE_RST
 /* pin activated entry (on port A) */
 //#define BL_ENTRY_ON_LOW_PIN			15
 /* Bad app CRC */
@@ -293,13 +293,14 @@ int main(void)
 	#endif
 
 	#ifdef BL_ENTRY_ON_MAGIC_NUM
-	if (PM->RCAUSE.reg & PM_RCAUSE_POR)
-	*BL_ENTRY_ON_MAGIC_ADDR = 0; /* a power up event should never be considered a 'double tap' */
+	//if (PM->RCAUSE.reg & PM_RCAUSE_POR)
+	//*BL_ENTRY_ON_MAGIC_ADDR = 0;
 	
 	if (*BL_ENTRY_ON_MAGIC_ADDR == BL_ENTRY_ON_MAGIC_NUM)
 	{
 		/* either a 'double tap' has happened or the app requested to run bootloader */
 		*BL_ENTRY_ON_MAGIC_ADDR = 0;
+		if (0 == (PM->RCAUSE.reg & PM_RCAUSE_POR))
 		goto run_bootloader;
 	}
 	#endif
@@ -313,7 +314,7 @@ int main(void)
 
 	/* postpone boot for a short period of time; if a second reset happens during this window, the "magic" value will remain */
 	*BL_ENTRY_ON_MAGIC_ADDR = BL_ENTRY_ON_MAGIC_NUM;
-	volatile int wait = 65536; while (wait--);
+	volatile unsigned long wait = 0x10000; while (wait--);
 	/* however, if execution reaches this point, the window of opportunity has closed and the "magic" disappears  */
 	#endif
 
@@ -364,9 +365,16 @@ int main(void)
 	initialize USB
 	*/
 
-	PORT->Group[0].PINCFG[24].reg |= PORT_PINCFG_PMUXEN;
-	PORT->Group[0].PINCFG[25].reg |= PORT_PINCFG_PMUXEN;
-	PORT->Group[0].PMUX[24>>1].reg = PORT_PMUX_PMUXO(PORT_PMUX_PMUXE_G_Val) | PORT_PMUX_PMUXE(PORT_PMUX_PMUXE_G_Val);
+	/* Configure the USB one by one */
+	//PORT->Group[0].PINCFG[24].reg |= PORT_PINCFG_PMUXEN;
+	//PORT->Group[0].PINCFG[25].reg |= PORT_PINCFG_PMUXEN;
+	//PORT->Group[0].PMUX[24>>1].reg = PORT_PMUX_PMUXO(PORT_PMUX_PMUXE_G_Val) | PORT_PMUX_PMUXE(PORT_PMUX_PMUXE_G_Val);
+
+	/* Configure PA24 and PA25 for USB simultaneously */
+	//TODO: should PULLUP be enabled by default
+	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_HWSEL | PORT_WRCONFIG_WRPINCFG | PORT_WRCONFIG_WRPMUX
+	| PORT_WRCONFIG_PMUX(PORT_PMUX_PMUXE_G_Val) | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK(25 | 24);
+	
 
 	PM->APBBMASK.reg |= PM_APBBMASK_USB;
 
