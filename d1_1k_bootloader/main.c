@@ -283,12 +283,12 @@ int main(void)
 {
 	#ifdef BL_ENTRY_ON_LOW_PIN
 	/* configure PA15 (bootloader entry pin used by SAM-BA) as input pull-up */
-	PORT->Group[0].PINCFG[BL_ENTRY_ON_LOW_PIN].reg = PORT_PINCFG_PULLEN | PORT_PINCFG_INEN;
-	PORT->Group[0].OUTSET.reg = (1UL << BL_ENTRY_ON_LOW_PIN);
-	#endif
+	//PORT->Group[0].PINCFG[BL_ENTRY_ON_LOW_PIN].reg = PORT_PINCFG_PULLEN | PORT_PINCFG_INEN;
+	//PORT->Group[0].OUTSET.reg = (1UL << BL_ENTRY_ON_LOW_PIN);
+	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_HWSEL | PORT_WRCONFIG_WRPINCFG
+	| PORT_WRCONFIG_PULLEN | PORT_WRCONFIG_INEN | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK(BL_ENTRY_ON_LOW_PIN);
 
-	#ifdef BL_ENTRY_ON_LOW_PIN
-	if (!(PORT->Group[0].IN.reg & (1UL << BL_ENTRY_ON_LOW_PIN)))
+	if (0 == (PORT->Group[0].IN.reg & (1UL << BL_ENTRY_ON_LOW_PIN)))
 	goto run_bootloader; /* pin grounded, so run bootloader */
 	#endif
 

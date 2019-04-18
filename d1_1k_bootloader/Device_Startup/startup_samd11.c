@@ -78,17 +78,5 @@ void irq_handler_reset(void)
 	__set_MSP(*(unsigned long *)(APPLICATION_START));
 
 	asm("bx %0"::"r" (reset_vector));
-	
-	//__asm("ldr r1, =0x400\n" /* origin of user app */
-	//"ldr r0, =0xE000ED08\n" /* VTOR register */
-	//"str r1, [r0]\n" /* point VTOR to user app */
-	//"ldr r0, [r1]\n" /* load stack pointer from user app */
-	//"msr msp, r0\n"
-	//"msr psp, r0\n"
-	//"ldr r0, [r1, #4]\n" /* load reset address from user app */
-	//"mov pc, r0\n"
-	//"loop:\n"
-	//"b ."
-	//);
 }
 
