@@ -38,6 +38,9 @@
 
 
 /*- Definitions -------------------------------------------------------------*/
+#define APPLICATION_CRC_OFFSET 0x10 //match the first "reserved" handler address in the irq vector
+
+
 #define USB_CMD(dir, rcpt, type) ((USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 #define SIMPLE_USB_CMD(rcpt, type) ((USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 
@@ -285,8 +288,13 @@ int main(void)
 	/* configure PA15 (bootloader entry pin used by SAM-BA) as input pull-up */
 	//PORT->Group[0].PINCFG[BL_ENTRY_ON_LOW_PIN].reg = PORT_PINCFG_PULLEN | PORT_PINCFG_INEN;
 	//PORT->Group[0].OUTSET.reg = (1UL << BL_ENTRY_ON_LOW_PIN);
+	#if BL_ENTRY_ON_LOW_PIN <= 15
+	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_WRPINCFG
+	| PORT_WRCONFIG_PULLEN | PORT_WRCONFIG_INEN | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK( 1 << BL_ENTRY_ON_LOW_PIN);
+	#else
 	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_HWSEL | PORT_WRCONFIG_WRPINCFG
-	| PORT_WRCONFIG_PULLEN | PORT_WRCONFIG_INEN | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK(BL_ENTRY_ON_LOW_PIN);
+	| PORT_WRCONFIG_PULLEN | PORT_WRCONFIG_INEN | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK(1 << (BL_ENTRY_ON_LOW_PIN - 16));
+	#endif
 
 	if (0 == (PORT->Group[0].IN.reg & (1UL << BL_ENTRY_ON_LOW_PIN)))
 	goto run_bootloader; /* pin grounded, so run bootloader */
@@ -324,7 +332,7 @@ int main(void)
 	PAC1->WPCLR.reg = 2; /* clear DSU */
 
 	DSU->ADDR.reg = APPLICATION_START; /* start CRC check at beginning of user app */
-	DSU->LENGTH.reg = *(volatile uint32_t *)0x410; /* use length encoded into unused vector address in user app */
+	DSU->LENGTH.reg = *(volatile uint32_t *)(APPLICATION_START + APPLICATION_CRC_OFFSET); /* use length encoded into unused vector address in user app */
 
 	/* ask DSU to compute CRC */
 	DSU->DATA.reg = 0xFFFFFFFF;
@@ -373,7 +381,7 @@ int main(void)
 	/* Configure PA24 and PA25 for USB simultaneously */
 	//TODO: should PULLUP be enabled by default
 	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_HWSEL | PORT_WRCONFIG_WRPINCFG | PORT_WRCONFIG_WRPMUX
-	| PORT_WRCONFIG_PMUX(PORT_PMUX_PMUXE_G_Val) | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK(25 | 24);
+	| PORT_WRCONFIG_PMUX(PORT_PMUX_PMUXE_G_Val) | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK((1 << (25 - 16)) | (1 << (24 - 16)));
 	
 
 	PM->APBBMASK.reg |= PM_APBBMASK_USB;
