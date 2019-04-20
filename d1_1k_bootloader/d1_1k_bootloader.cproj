@@ -40,8 +40,82 @@
         </dependencies>
       </framework-data>
     </AsfFrameworkConfig>
+    <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
+    <avrtoolserialnumber>J41800021358</avrtoolserialnumber>
+    <avrdeviceexpectedsignature>0x10030109</avrdeviceexpectedsignature>
+    <avrtoolinterface>SWD</avrtoolinterface>
+    <com_atmel_avrdbg_tool_atmelice>
+      <ToolOptions>
+        <InterfaceProperties>
+          <SwdClock>2000000</SwdClock>
+        </InterfaceProperties>
+        <InterfaceName>SWD</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
+      <ToolNumber>J41800021358</ToolNumber>
+      <ToolName>Atmel-ICE</ToolName>
+    </com_atmel_avrdbg_tool_atmelice>
+    <avrtoolinterfaceclock>2000000</avrtoolinterfaceclock>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <ToolchainSettings>
+      <ArmGcc>
+        <armgcc.common.outputfiles.hex>True</armgcc.common.outputfiles.hex>
+        <armgcc.common.outputfiles.lss>True</armgcc.common.outputfiles.lss>
+        <armgcc.common.outputfiles.eep>True</armgcc.common.outputfiles.eep>
+        <armgcc.common.outputfiles.bin>True</armgcc.common.outputfiles.bin>
+        <armgcc.common.outputfiles.srec>True</armgcc.common.outputfiles.srec>
+        <armgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>NDEBUG</Value>
+            <Value>APPLICATION_START=0x400</Value>
+            <Value>USB_MANUFACTURER_STR='"AloyseTech"'</Value>
+            <Value>USB_PRODUCT_STR='"SAMD DFU"'</Value>
+            <Value>USE_STRING_DESCRIPTOR=0</Value>
+          </ListValues>
+        </armgcc.compiler.symbols.DefSymbols>
+        <armgcc.compiler.directories.IncludePaths>
+          <ListValues>
+            <Value>%24(PackRepoDir)\arm\cmsis\5.0.1\CMSIS\Include\</Value>
+            <Value>%24(PackRepoDir)\Atmel\SAMD11_DFP\1.1.81\include</Value>
+          </ListValues>
+        </armgcc.compiler.directories.IncludePaths>
+        <armgcc.compiler.optimization.level>Optimize for size (-Os)</armgcc.compiler.optimization.level>
+        <armgcc.compiler.optimization.OtherFlags>-flto</armgcc.compiler.optimization.OtherFlags>
+        <armgcc.compiler.optimization.PrepareFunctionsForGarbageCollection>True</armgcc.compiler.optimization.PrepareFunctionsForGarbageCollection>
+        <armgcc.compiler.optimization.PrepareDataForGarbageCollection>True</armgcc.compiler.optimization.PrepareDataForGarbageCollection>
+        <armgcc.compiler.warnings.AllWarnings>True</armgcc.compiler.warnings.AllWarnings>
+        <armgcc.compiler.miscellaneous.OtherFlags />
+        <armgcc.linker.general.UseNewlibNano>True</armgcc.linker.general.UseNewlibNano>
+        <armgcc.linker.libraries.LibrarySearchPaths>
+          <ListValues>
+            <Value>%24(ProjectDir)\Device_Startup</Value>
+          </ListValues>
+        </armgcc.linker.libraries.LibrarySearchPaths>
+        <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
+        <armgcc.linker.memorysettings.ExternalRAM />
+        <armgcc.linker.miscellaneous.LinkerFlags>-Tsamd11d14_bootloader.ld</armgcc.linker.miscellaneous.LinkerFlags>
+        <armgcc.linker.miscellaneous.OtherObjects>
+          <ListValues>
+            <Value>-flto</Value>
+          </ListValues>
+        </armgcc.linker.miscellaneous.OtherObjects>
+        <armgcc.assembler.general.IncludePaths>
+          <ListValues>
+            <Value>%24(PackRepoDir)\arm\cmsis\5.0.1\CMSIS\Include\</Value>
+            <Value>%24(PackRepoDir)\Atmel\SAMD11_DFP\1.1.81\include</Value>
+          </ListValues>
+        </armgcc.assembler.general.IncludePaths>
+        <armgcc.preprocessingassembler.general.IncludePaths>
+          <ListValues>
+            <Value>%24(PackRepoDir)\arm\cmsis\5.0.1\CMSIS\Include\</Value>
+            <Value>%24(PackRepoDir)\Atmel\SAMD11_DFP\1.1.81\include</Value>
+          </ListValues>
+        </armgcc.preprocessingassembler.general.IncludePaths>
+      </ArmGcc>
+    </ToolchainSettings>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <ToolchainSettings>
       <ArmGcc>
   <armgcc.common.outputfiles.hex>True</armgcc.common.outputfiles.hex>
@@ -51,7 +125,7 @@
   <armgcc.common.outputfiles.srec>True</armgcc.common.outputfiles.srec>
   <armgcc.compiler.symbols.DefSymbols>
     <ListValues>
-      <Value>NDEBUG</Value>
+      <Value>DEBUG</Value>
       <Value>APPLICATION_START=0x400</Value>
       <Value>USB_MANUFACTURER_STR='"AloyseTech"'</Value>
       <Value>USB_PRODUCT_STR='"SAMD DFU"'</Value>
@@ -68,6 +142,8 @@
   <armgcc.compiler.optimization.OtherFlags>-flto</armgcc.compiler.optimization.OtherFlags>
   <armgcc.compiler.optimization.PrepareFunctionsForGarbageCollection>True</armgcc.compiler.optimization.PrepareFunctionsForGarbageCollection>
   <armgcc.compiler.optimization.PrepareDataForGarbageCollection>True</armgcc.compiler.optimization.PrepareDataForGarbageCollection>
+  <armgcc.compiler.optimization.DebugLevel>Maximum (-g3)</armgcc.compiler.optimization.DebugLevel>
+  <armgcc.compiler.optimization.GenerateGprofInformation>True</armgcc.compiler.optimization.GenerateGprofInformation>
   <armgcc.compiler.warnings.AllWarnings>True</armgcc.compiler.warnings.AllWarnings>
   <armgcc.compiler.miscellaneous.OtherFlags />
   <armgcc.linker.general.UseNewlibNano>True</armgcc.linker.general.UseNewlibNano>
@@ -98,6 +174,7 @@
   </armgcc.preprocessingassembler.general.IncludePaths>
 </ArmGcc>
     </ToolchainSettings>
+    <OutputPath>bin\Debug\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Device_Startup\startup_samd11.c">
@@ -126,12 +203,6 @@
     <Folder Include="Device_Startup\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Device_Startup\samd11d14au_flash.ld">
-      <SubType>compile</SubType>
-    </None>
-    <None Include="Device_Startup\samd11d14au_sram.ld">
-      <SubType>compile</SubType>
-    </None>
     <None Include="Device_Startup\samd11d14_bootloader.ld">
       <SubType>compile</SubType>
     </None>
