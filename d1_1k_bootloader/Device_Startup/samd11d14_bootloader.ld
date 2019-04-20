@@ -69,8 +69,7 @@ SECTIONS
     *(.data*)
     . = ALIGN(4);
     _edata = .;
-  /*} > ram AT > flash*/
-  } > ram
+  } > ram AT > flash
 
   .bss : ALIGN(4)
   {

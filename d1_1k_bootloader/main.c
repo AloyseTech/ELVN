@@ -39,7 +39,8 @@
 
 /*- Definitions -------------------------------------------------------------*/
 #define APPLICATION_CRC_OFFSET 0x10 //match the first "reserved" handler address in the irq vector
-
+#define LED_ENABLE
+#define LED_PIN	27 // PA27
 
 #define USB_CMD(dir, rcpt, type) ((USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 #define SIMPLE_USB_CMD(rcpt, type) ((USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
@@ -99,6 +100,10 @@ static void USB_Service(void)
 
 	if (USB->DEVICE.INTFLAG.bit.EORST) /* End Of Reset */
 	{
+		#ifdef LED_ENABLE
+		PORT->Group[0].OUTTGL.reg = 1 << LED_PIN;
+		#endif
+		
 		USB->DEVICE.INTFLAG.reg = USB_DEVICE_INTFLAG_EORST;
 		USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN;
 
@@ -120,6 +125,10 @@ static void USB_Service(void)
 
 	if (USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT0) /* Transmit Complete 0 */
 	{
+		#ifdef LED_ENABLE
+		PORT->Group[0].OUTTGL.reg = 1 << LED_PIN;
+		#endif
+		
 		if (dfu_addr)
 		{
 			if (0 == ((dfu_addr >> 6) & 0x3))
@@ -144,6 +153,9 @@ static void USB_Service(void)
 
 	if (USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.RXSTP) /* Received Setup */
 	{
+		#ifdef LED_ENABLE
+		PORT->Group[0].OUTTGL.reg = 1 << LED_PIN;
+		#endif
 		USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.reg = USB_DEVICE_EPINTFLAG_RXSTP;
 		USB->DEVICE.DeviceEndpoint[0].EPSTATUSCLR.bit.BK0RDY = 1;
 
@@ -284,6 +296,20 @@ static void USB_Service(void)
 
 int main(void)
 {
+	#ifdef LED_ENABLE
+	/*
+	#if LED_PIN <= 15
+	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_HWSEL | PORT_WRCONFIG_WRPINCFG
+	| PORT_WRCONFIG_PULLEN | PORT_WRCONFIG_INEN | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK(1 << (LED_PIN));
+	#else
+	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_HWSEL | PORT_WRCONFIG_WRPINCFG
+	| PORT_WRCONFIG_ | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_PINMASK(1 << (LED_PIN - 16));
+	#endif
+	*/
+	PORT->Group[0].DIRSET.reg = 1 << LED_PIN;
+	PORT->Group[0].PINCFG[LED_PIN].reg |= PORT_PINCFG_INEN;
+	#endif
+	
 	#ifdef BL_ENTRY_ON_LOW_PIN
 	/* configure PA15 (bootloader entry pin used by SAM-BA) as input pull-up */
 	//PORT->Group[0].PINCFG[BL_ENTRY_ON_LOW_PIN].reg = PORT_PINCFG_PULLEN | PORT_PINCFG_INEN;
