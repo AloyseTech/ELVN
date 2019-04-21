@@ -38,12 +38,50 @@
 
 
 /*- Definitions -------------------------------------------------------------*/
-#define APPLICATION_CRC_OFFSET 0x10 //match the first "reserved" handler address in the irq vector
-//#define LED_ENABLE
+#define APPLICATION_LEN_OFFSET 0x10 //match the first "reserved" handler address in the irq vector
+
+#define LED_ENABLE
 #define LED_PIN	27 // PA27
+
+/* If this feature is enabled, the bootloader automatically continue to the application once flashed */
+#define BOOT_TO_APP_AFTER_DFU
+
+/* Enable UART feature */
+#define FEATURE_UART
+
+/* Enable USB DFU feature */
+#define FEATURE_DFU
+
+/* Bootloader entry methods */
+/* Magic marker at a specific place in RAM (see BL_ENTRY_ON_MAGIC_ADDR) */
+#define BL_ENTRY_ON_MAGIC_NUM		0xf02669ef
+/* Reset "double tap" */
+#define BL_ENTRY_ON_DOUBLE_RST
+/* pin activated entry (on port A) */
+#define BL_ENTRY_ON_LOW_PIN			15
+/* Bad app CRC */
+#define BL_ENTRY_ON_BAD_CRC
+
+#define BL_ENTRY_ON_MAGIC_ADDR		(uint32_t *)(HMCRAMC0_ADDR + HMCRAMC0_SIZE - 4)
+
+
+#define UART_SERCOM              SERCOM0
+#define UART_SERCOM_PMUX         PORT_PMUX_PMUXE_C_Val
+#define UART_SERCOM_GCLK_ID      SERCOM0_GCLK_ID_CORE
+#define UART_SERCOM_GCLK_GEN     0
+#define UART_SERCOM_APBCMASK     PM_APBCMASK_SERCOM0
+#define UART_SERCOM_TXPO         2
+#define UART_SERCOM_RXPO         0
+#define UART_TX_PIN              4 // PA04
+#define UART_RX_PIN              6 // PA06
+#define UART_SERCOM_GCLK	     8000000ul
+#define UART_BAUDRATE		     115200ul
+#define UART_BAUD_VAL	         (65536.0*(1.0-((float)(16.0*(float)UART_BAUDRATE)/(float)UART_SERCOM_GCLK)))
 
 #define USB_CMD(dir, rcpt, type) ((USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 #define SIMPLE_USB_CMD(rcpt, type) ((USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
+
+#define FLASH_ROW_SIZE (4 * FLASH_PAGE_SIZE)
 
 /*- Types -------------------------------------------------------------------*/
 typedef struct
@@ -66,6 +104,23 @@ static uint32_t udc_ctrl_out_buf[16];
 
 
 /*- Implementations ---------------------------------------------------------*/
+//-----------------------------------------------------------------------------
+static void nvm_write_page(uint32_t dest_addr, const uint8_t *page_buffer)
+{
+	if (0 == ((dest_addr >> 6) & 0x3))
+	{
+		//erase the row if necessary
+		NVMCTRL->ADDR.reg = dest_addr >> 1;
+		NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD(NVMCTRL_CTRLA_CMD_ER);
+		while (!NVMCTRL->INTFLAG.bit.READY);
+	}
+
+	uint16_t *nvm_addr = (uint16_t *)(dest_addr);
+	uint16_t *ram_addr = (uint16_t *)page_buffer;
+	for (unsigned i = 0; i < 32; i++)
+	*nvm_addr++ = *ram_addr++;
+	while (!NVMCTRL->INTFLAG.bit.READY);
+}
 
 //-----------------------------------------------------------------------------
 static void udc_control_send(const uint32_t *data, uint32_t size)
@@ -94,7 +149,7 @@ static void udc_control_send_zlp(void)
 }
 
 //-----------------------------------------------------------------------------
-static void USB_Service(void)
+static uint8_t USB_Service(void)
 {
 	static uint32_t dfu_addr;
 
@@ -131,11 +186,13 @@ static void USB_Service(void)
 		
 		if (dfu_addr)
 		{
+			nvm_write_page(dfu_addr, (uint8_t*)udc_ctrl_out_buf);
+			/*
 			if (0 == ((dfu_addr >> 6) & 0x3))
 			{
-				NVMCTRL->ADDR.reg = dfu_addr >> 1;
-				NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD(NVMCTRL_CTRLA_CMD_ER);
-				while (!NVMCTRL->INTFLAG.bit.READY);
+			NVMCTRL->ADDR.reg = dfu_addr >> 1;
+			NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD(NVMCTRL_CTRLA_CMD_ER);
+			while (!NVMCTRL->INTFLAG.bit.READY);
 			}
 
 			uint16_t *nvm_addr = (uint16_t *)(dfu_addr);
@@ -143,8 +200,16 @@ static void USB_Service(void)
 			for (unsigned i = 0; i < 32; i++)
 			*nvm_addr++ = *ram_addr++;
 			while (!NVMCTRL->INTFLAG.bit.READY);
+			*/
 
 			udc_control_send_zlp();
+			
+			#ifdef BOOT_TO_APP_AFTER_DFU
+			/* if this is the last page to be written, reset to application */
+			if(dfu_addr == (*(volatile uint32_t *)(APPLICATION_START + APPLICATION_LEN_OFFSET)) % 64)
+			//NVIC_SystemReset(); // we could also make main returns
+			return 0;
+			#endif
 			dfu_addr = 0;
 		}
 
@@ -169,7 +234,7 @@ static void USB_Service(void)
 		if (USB_CMD(OUT, INTERFACE, STANDARD) == request->bmRequestType)
 		{
 			udc_control_send_zlp();
-			return;
+			return 1;
 		}
 
 		/* for these "simple" USB requests, we can ignore the direction and use only bRequest */
@@ -196,27 +261,42 @@ static void USB_Service(void)
 
 					if (0 == index)
 					{
-						length = LIMIT(length, usb_string_descriptor_zero.bLength);
-
-						udc_control_send((uint32_t *)&usb_string_descriptor_zero, length);
+						//length = LIMIT(length, usb_string_descriptor_zero.bLength);
+						//udc_control_send((uint32_t *)&usb_string_descriptor_zero, length);
+						//uint8_t descriptor_zero[] __attribute__ ((aligned (4))) = {0x04, USB_STRING_DESCRIPTOR, 0x04, 0x09};
+						udc_control_send((uint32_t *)string_descriptor, string_descriptor[0]);
 					}
 					else if (index < USB_STR_COUNT)
 					{
+						/*
+						//1156
 						const char *str = usb_strings[index];
 						int len;
 
 						for (len = 0; *str; len++, str++)
 						{
-							usb_string_descriptor_buffer[2 + len*2] = *str;
-							usb_string_descriptor_buffer[3 + len*2] = 0;
+						usb_string_descriptor_buffer[2 + len*2] = *str;
+						usb_string_descriptor_buffer[3 + len*2] = 0;
 						}
 
 						usb_string_descriptor_buffer[0] = len*2 + 2;
 						usb_string_descriptor_buffer[1] = USB_STRING_DESCRIPTOR;
 
 						length = LIMIT(length, usb_string_descriptor_buffer[0]);
+						*/
+						/*
+						if(index == USB_STR_MANUFACTURER)
+						{
+						udc_control_send((uint32_t*)manufacturer, manufacturer[0]);
+						}
+						else //index == USB_STR_PRODUCT
+						{
+						udc_control_send((uint32_t*)product, product[0]);
+						}
+						*/
+						//udc_control_send((uint32_t*)product, product[0]);
+						udc_control_send((uint32_t *)(string_descriptor+4), string_descriptor[4]);
 
-						udc_control_send((uint32_t *)usb_string_descriptor_buffer, length);
 					}
 					else
 					{
@@ -278,21 +358,141 @@ static void USB_Service(void)
 			break;
 		}
 	}
+	return 1;
 }
 
 
-/* Bootloader entry methods */
-/* Magic marker at a specific place in RAM (see BL_ENTRY_ON_MAGIC_ADDR) */
-#define BL_ENTRY_ON_MAGIC_NUM		0xf02669ef
-/* Reset "double tap" */
-#define BL_ENTRY_ON_DOUBLE_RST
-/* pin activated entry (on port A) */
-//#define BL_ENTRY_ON_LOW_PIN			15
-/* Bad app CRC */
-#define BL_ENTRY_ON_BAD_CRC
+#ifdef FEATURE_UART
+static void UART_Init()
+{
+	#if UART_TX_PIN < 16 && UART_RX_PIN < 16
+	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_WRPINCFG
+	| PORT_WRCONFIG_PMUX(UART_SERCOM_PMUX) | PORT_WRCONFIG_PINMASK((1 << UART_TX_PIN) | (1 << UART_RX_PIN));
+	#elif UART_TX_PIN > 16 && UART_RX_PIN > 16
+	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_WRPINCFG
+	| PORT_WRCONFIG_PMUX(UART_SERCOM_PMUX) | PORT_WRCONFIG_PINMASK((1 << (UART_TX_PIN - 16)) | (1 << (UART_RX_PIN - 16)));
+	#else
+	#error "UART TX and RX pin should be on the same 16bit pinmask for code size reduction"
+	#endif
+	
+	PM->APBCMASK.reg |= UART_SERCOM_APBCMASK;
+	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(UART_SERCOM_GCLK_ID) |
+	GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(UART_SERCOM_GCLK_GEN);
+	
+	UART_SERCOM->USART.CTRLA.reg = SERCOM_USART_CTRLA_SWRST;
+	while (UART_SERCOM->USART.CTRLA.bit.SWRST);
 
 
-#define BL_ENTRY_ON_MAGIC_ADDR		(uint32_t *)(HMCRAMC0_ADDR + HMCRAMC0_SIZE - 4)
+	UART_SERCOM->USART.CTRLA.reg = SERCOM_USART_CTRLA_RXPO(UART_SERCOM_RXPO) | SERCOM_USART_CTRLA_TXPO(UART_SERCOM_TXPO)
+	| SERCOM_USART_CTRLA_MODE(1) | SERCOM_USART_CTRLA_DORD;
+	
+	UART_SERCOM->USART.CTRLB.reg = SERCOM_USART_CTRLB_RXEN | SERCOM_USART_CTRLB_TXEN | SERCOM_USART_CTRLB_CHSIZE(0);
+	while(UART_SERCOM->USART.SYNCBUSY.bit.CTRLB);
+	
+	UART_SERCOM->USART.BAUD.reg = UART_BAUD_VAL;
+	
+	UART_SERCOM->USART.CTRLA.bit.ENABLE = 1;
+	#ifdef LED_ENABLE
+	volatile uint32_t delay = 0;
+	#endif
+	while(UART_SERCOM->USART.SYNCBUSY.bit.ENABLE)
+	{
+		// TODO: System is stuck here
+		// Is the clock generator correctly initialized? At the correct speed? The source of the Generator is running?
+		#ifdef LED_ENABLE
+		if(delay-- == 0)
+		{
+			PORT->Group[0].OUTTGL.reg = 1 << LED_PIN;
+			delay = 0x10000;
+		}
+		#endif
+	}
+	
+}
+
+static void UART_Write(uint8_t data)
+{
+	while(!UART_SERCOM->USART.INTFLAG.bit.DRE);
+	UART_SERCOM->USART.DATA.reg = (uint16_t)data;
+}
+
+static uint8_t UART_Read(void)
+{
+	while(!UART_SERCOM->USART.INTFLAG.bit.RXC);
+	return((uint8_t)(UART_SERCOM->USART.DATA.reg & 0x00FF));
+}
+
+
+static uint8_t UART_Service()
+{
+	static uint8_t page_buffer[FLASH_PAGE_SIZE];
+	static uint32_t i;
+	static uint32_t dest_addr;
+	static uint32_t * flash_ptr;
+	
+	uint8_t data_8 = UART_Read();
+	if (data_8 == '#')
+	{
+		UART_Write('s');
+		UART_Write((uint8_t)(FLASH_SIZE - APPLICATION_START) / FLASH_ROW_SIZE);
+	}
+	else if (data_8 == 'e')
+	{
+		#if 0
+		for(i = APPLICATION_START; i < FLASH_SIZE; i = i + 256)
+		{
+			//nvm_erase_row(i);
+		}
+		#endif
+		dest_addr = APPLICATION_START;
+		flash_ptr = (uint32_t *)APPLICATION_START;
+		UART_Write('s');
+	}
+	else if (data_8 == 'p')
+	{
+		UART_Write('s');
+		for (i = 0; i < FLASH_PAGE_SIZE; i++)
+		{
+			page_buffer[i] = UART_Read();
+		}
+		//nvm_write_buffer(dest_addr, page_buffer, FLASH_PAGE_SIZE);
+		nvm_write_page(dest_addr, page_buffer);
+		/*
+		if (0 == ((dest_addr >> 6) & 0x3))
+		{
+		//erase the row if necessary
+		NVMCTRL->ADDR.reg = dest_addr >> 1;
+		NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD(NVMCTRL_CTRLA_CMD_ER);
+		while (!NVMCTRL->INTFLAG.bit.READY);
+		}
+
+		uint16_t *nvm_addr = (uint16_t *)(dest_addr);
+		uint16_t *ram_addr = (uint16_t *)page_buffer;
+		for (unsigned i = 0; i < 32; i++)
+		*nvm_addr++ = *ram_addr++;
+		while (!NVMCTRL->INTFLAG.bit.READY);
+		*/
+		
+		dest_addr += FLASH_PAGE_SIZE;
+		UART_Write('s');
+	}
+	else if (data_8 == 'v')
+	{
+		UART_Write('s');
+		for (i = 0; i < (FLASH_PAGE_SIZE/4); i++)
+		{
+			uint32_t app_start_address = *flash_ptr;
+			UART_Write((uint8_t)(app_start_address));
+			UART_Write((uint8_t)(app_start_address >> 8));
+			UART_Write((uint8_t)(app_start_address >> 16));
+			UART_Write((uint8_t)(app_start_address >> 24));
+			flash_ptr++;
+		}
+	}
+	return 1;
+}
+#endif
+
 
 int main(void)
 {
@@ -358,7 +558,7 @@ int main(void)
 	PAC1->WPCLR.reg = 2; /* clear DSU */
 
 	DSU->ADDR.reg = APPLICATION_START; /* start CRC check at beginning of user app */
-	DSU->LENGTH.reg = *(volatile uint32_t *)(APPLICATION_START + APPLICATION_CRC_OFFSET); /* use length encoded into unused vector address in user app */
+	DSU->LENGTH.reg = *(volatile uint32_t *)(APPLICATION_START + APPLICATION_LEN_OFFSET); /* use length encoded into unused vector address in user app */
 
 	/* ask DSU to compute CRC */
 	DSU->DATA.reg = 0xFFFFFFFF;
@@ -395,6 +595,15 @@ int main(void)
 	GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(0) | GCLK_GENCTRL_SRC(GCLK_SOURCE_DFLL48M) | GCLK_GENCTRL_RUNSTDBY | GCLK_GENCTRL_GENEN;
 	while (GCLK->STATUS.bit.SYNCBUSY);
 
+	#ifdef FEATURE_UART
+	GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(1) | GCLK_GENCTRL_SRC(GCLK_SOURCE_OSC8M) | GCLK_GENCTRL_RUNSTDBY | GCLK_GENCTRL_GENEN;
+	while (GCLK->STATUS.bit.SYNCBUSY);
+	#endif
+
+	#ifdef FEATURE_UART
+	UART_Init();
+	#endif
+	
 	/*
 	initialize USB
 	*/
@@ -425,10 +634,22 @@ int main(void)
 	USB->DEVICE.CTRLB.reg = USB_DEVICE_CTRLB_SPDCONF_FS;
 	USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
 
+	
 	/*
 	service USB
 	*/
 
-	while (1)
-	USB_Service();
+	#ifdef LED_ENABLE
+	volatile uint32_t delay = 0x40000;
+	#endif
+	while (USB_Service() /*&& UART_Service()*/)
+	{
+		#ifdef LED_ENABLE
+		if(delay-- == 0)
+		{
+			PORT->Group[0].OUTTGL.reg = 1 << LED_PIN;
+			delay = 0x40000;
+		}
+		#endif
+	}
 }

@@ -13,7 +13,7 @@
     <OutputFileExtension>.elf</OutputFileExtension>
     <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
     <AssemblyName>d1_1k_bootloader</AssemblyName>
-    <Name>d1_1k_bootloader</Name>
+    <Name>1kB_DFU_Bootloader</Name>
     <RootNamespace>d1_1k_bootloader</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
@@ -126,10 +126,10 @@
   <armgcc.compiler.symbols.DefSymbols>
     <ListValues>
       <Value>DEBUG</Value>
-      <Value>APPLICATION_START=0x400</Value>
+      <Value>APPLICATION_START=0x600</Value>
       <Value>USB_MANUFACTURER_STR='"AloyseTech"'</Value>
       <Value>USB_PRODUCT_STR='"SAMD DFU"'</Value>
-      <Value>USE_STRING_DESCRIPTOR=0</Value>
+      <Value>USE_STRING_DESCRIPTOR=1</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>

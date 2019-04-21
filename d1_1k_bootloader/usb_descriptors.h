@@ -68,5 +68,8 @@ extern const usb_string_descriptor_zero_t usb_string_descriptor_zero;
 extern const char *usb_strings[];
 extern uint8_t usb_string_descriptor_buffer[64];
 
+extern uint8_t manufacturer[];
+extern uint8_t product[];
+extern uint8_t string_descriptor[];
 #endif // _USB_DESCRIPTORS_H_
 
