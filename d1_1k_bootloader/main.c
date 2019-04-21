@@ -39,7 +39,7 @@
 
 /*- Definitions -------------------------------------------------------------*/
 #define APPLICATION_CRC_OFFSET 0x10 //match the first "reserved" handler address in the irq vector
-#define LED_ENABLE
+//#define LED_ENABLE
 #define LED_PIN	27 // PA27
 
 #define USB_CMD(dir, rcpt, type) ((USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
