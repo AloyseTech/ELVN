@@ -12,9 +12,9 @@
     <OutputFileName>$(MSBuildProjectName)</OutputFileName>
     <OutputFileExtension>.elf</OutputFileExtension>
     <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
-    <AssemblyName>d1_1k_bootloader</AssemblyName>
+    <AssemblyName>Bootloader</AssemblyName>
     <Name>Bootloader</Name>
-    <RootNamespace>d1_1k_bootloader</RootNamespace>
+    <RootNamespace>Bootloader</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
