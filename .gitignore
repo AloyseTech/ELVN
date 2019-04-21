@@ -8,5 +8,5 @@
 *.lss
 *.map
 *.srec
-d1_1k_bootloader/Release/
-d1_1k_bootloader/Debug/
+Bootloader/Release/
+Bootloader/Debug/

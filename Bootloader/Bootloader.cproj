@@ -13,7 +13,7 @@
     <OutputFileExtension>.elf</OutputFileExtension>
     <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
     <AssemblyName>d1_1k_bootloader</AssemblyName>
-    <Name>1kB_DFU_Bootloader</Name>
+    <Name>Bootloader</Name>
     <RootNamespace>d1_1k_bootloader</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
