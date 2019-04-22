@@ -8,5 +8,3 @@
 *.lss
 *.map
 *.srec
-Bootloader/Release/
-Bootloader/Debug/

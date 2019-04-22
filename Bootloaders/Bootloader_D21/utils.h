@@ -37,4 +37,3 @@
 #define LIMIT(a, b)     (((a) > (b)) ? (b) : (a))
 
 #endif // _UTILS_H_
-

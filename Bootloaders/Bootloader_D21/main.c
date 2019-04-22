@@ -66,14 +66,14 @@
 
 
 #define UART_SERCOM              SERCOM0
-#define UART_SERCOM_PMUX         PORT_PMUX_PMUXE_C_Val
+#define UART_SERCOM_PMUX         PORT_PMUX_PMUXE_D_Val
 #define UART_SERCOM_GCLK_ID      SERCOM0_GCLK_ID_CORE
-#define UART_SERCOM_GCLK_GEN     0
+#define UART_SERCOM_GCLK_GEN     1
 #define UART_SERCOM_APBCMASK     PM_APBCMASK_SERCOM0
-#define UART_SERCOM_TXPO         2
+#define UART_SERCOM_TXPO         1
 #define UART_SERCOM_RXPO         0
-#define UART_TX_PIN              4 // PA04
-#define UART_RX_PIN              6 // PA06
+#define UART_TX_PIN              6 // PA04
+#define UART_RX_PIN              4 // PA06
 #define UART_SERCOM_GCLK	     8000000ul
 #define UART_BAUDRATE		     115200ul
 #define UART_BAUD_VAL	         (65536.0*(1.0-((float)(16.0*(float)UART_BAUDRATE)/(float)UART_SERCOM_GCLK)))
@@ -366,7 +366,7 @@ static uint8_t USB_Service(void)
 static void UART_Init()
 {
 	#if UART_TX_PIN < 16 && UART_RX_PIN < 16
-	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_WRPINCFG
+	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_WRPMUX | PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_WRPINCFG
 	| PORT_WRCONFIG_PMUX(UART_SERCOM_PMUX) | PORT_WRCONFIG_PINMASK((1 << UART_TX_PIN) | (1 << UART_RX_PIN));
 	#elif UART_TX_PIN > 16 && UART_RX_PIN > 16
 	PORT->Group[0].WRCONFIG.reg = PORT_WRCONFIG_PMUXEN | PORT_WRCONFIG_WRPINCFG
@@ -430,11 +430,12 @@ static uint8_t UART_Service()
 	static uint32_t dest_addr;
 	static uint32_t * flash_ptr;
 	
+	if(!UART_SERCOM->USART.INTFLAG.bit.RXC) return 1;
 	uint8_t data_8 = UART_Read();
 	if (data_8 == '#')
 	{
 		UART_Write('s');
-		UART_Write((uint8_t)(FLASH_SIZE - APPLICATION_START) / FLASH_ROW_SIZE);
+		UART_Write((uint8_t)((FLASH_SIZE - APPLICATION_START) / FLASH_ROW_SIZE));
 	}
 	else if (data_8 == 'e')
 	{
@@ -488,6 +489,28 @@ static uint8_t UART_Service()
 			UART_Write((uint8_t)(app_start_address >> 24));
 			flash_ptr++;
 		}
+	}
+	else if (data_8 == 'c')
+	{
+		UART_Write('s');
+		PAC1->WPCLR.reg = 2; /* clear DSU */
+
+		DSU->ADDR.reg = APPLICATION_START; /* start CRC check at beginning of user app */
+		DSU->LENGTH.reg = *(volatile uint32_t *)(APPLICATION_START + APPLICATION_LEN_OFFSET); /* use length encoded into unused vector address in user app */
+
+		/* ask DSU to compute CRC */
+		DSU->DATA.reg = 0xFFFFFFFF;
+		DSU->CTRL.bit.CRC = 1;
+		while (!DSU->STATUSA.bit.DONE);
+
+		if (DSU->DATA.reg) //reverse CRC must be 0
+		UART_Write('p'); // pass
+		else
+		UART_Write('f'); // fail
+	}
+	else if (data_8 == 'r')
+	{
+		return 0;
 	}
 	return 1;
 }
@@ -642,13 +665,14 @@ int main(void)
 	#ifdef LED_ENABLE
 	volatile uint32_t delay = 0x40000;
 	#endif
-	while (USB_Service() /*&& UART_Service()*/)
+	while (USB_Service() && UART_Service())
 	{
 		#ifdef LED_ENABLE
 		if(delay-- == 0)
 		{
 			PORT->Group[0].OUTTGL.reg = 1 << LED_PIN;
 			delay = 0x40000;
+			//UART_Write('x');
 		}
 		#endif
 	}
