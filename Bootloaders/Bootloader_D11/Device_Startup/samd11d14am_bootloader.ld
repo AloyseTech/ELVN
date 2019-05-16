@@ -29,7 +29,7 @@
 
 MEMORY
 {
-  flash (rx) : ORIGIN = 0x00000000, LENGTH = 0x400 /* Adjust this depending on the enabled feature */
+  flash (rx) : ORIGIN = 0x00000000, LENGTH = 0x800 /* Adjust this depending on the enabled feature */
   ram  (rwx) : ORIGIN = 0x20000000, LENGTH = 4096-4
 }
 
@@ -84,4 +84,3 @@ SECTIONS
 
   PROVIDE(_stack_top = __top_ram - 0);
 }
-

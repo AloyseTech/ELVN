@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, Théo Meyer <meyertheopro@gmail.com>
- * Copyright (c) 2016-2017, Alex Taradov <alex@taradov.com>
+ * Copyright (c) 2016, Alex Taradov <alex@taradov.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,61 +27,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-MEMORY
+#ifndef _USB_DESCRIPTORS_H_
+#define _USB_DESCRIPTORS_H_
+
+/*- Includes ----------------------------------------------------------------*/
+#include "usb.h"
+#include "utils.h"
+
+/*- Definitions -------------------------------------------------------------*/
+enum
 {
-  flash (rx) : ORIGIN = 0x00000000, LENGTH = 0x400 /* Adjust this depending on the enabled feature */
-  ram  (rwx) : ORIGIN = 0x20000000, LENGTH = 4096-4
-}
+	USB_STR_ZERO,
+	USB_STR_MANUFACTURER,
+	USB_STR_PRODUCT,
+	USB_STR_COUNT,
+};
 
-__top_flash = ORIGIN(flash) + LENGTH(flash);
-__top_ram = ORIGIN(ram) + LENGTH(ram);
-
-ENTRY(irq_handler_reset)
-
-SECTIONS
+/*- Types -------------------------------------------------------------------*/
+typedef struct PACK
 {
-  .text : ALIGN(4)
-  {
-    FILL(0xff)
-    KEEP(*(.vectors))
-    *(.romfunc)
-    *(.romfunc.*)
-    . = ALIGN(4);
-  } > flash
+  uint8_t   bLength;
+  uint8_t   bDescriptorType;
+  uint8_t   bmAttributes;
+  uint16_t  wDetachTimeout;
+  uint16_t  wTransferSize;
+  uint16_t  bcdDFU;
+} usb_dfu_descriptor_t;
 
-  . = ALIGN(4);
-  _etext = .;
+typedef struct PACK
+{
+  usb_configuration_descriptor_t  configuration;
+  usb_interface_descriptor_t      interface;
+  usb_dfu_descriptor_t            dfu;
+} usb_configuration_hierarchy_t;
 
-  .uninit_RESERVED : ALIGN(4)
-  {
-    KEEP(*(.bss.$RESERVED*))
-  } > ram
+//-----------------------------------------------------------------------------
+extern usb_device_descriptor_t usb_device_descriptor;
+extern usb_configuration_hierarchy_t usb_configuration_hierarchy;
+extern const usb_string_descriptor_zero_t usb_string_descriptor_zero;
+extern const char *usb_strings[];
+extern uint8_t usb_string_descriptor_buffer[64];
 
-  .data : ALIGN(4)
-  {
-    FILL(0xff)
-    _data = .;
-    *(.ram_vectors)
-    *(.text*)
-    *(.rodata)
-    *(.rodata.*)
-    *(vtable)
-    *(.data*)
-    . = ALIGN(4);
-    _edata = .;
-  } > ram AT > flash
-
-
-  .bss : ALIGN(4)
-  {
-    _bss = .;
-    *(.bss*)
-    *(COMMON)
-    . = ALIGN(4);
-    _ebss = .;
-    PROVIDE(_end = .);
-  } > ram
-
-  PROVIDE(_stack_top = __top_ram - 0);
-}
+extern uint8_t manufacturer[];
+extern uint8_t product[];
+extern uint8_t string_descriptor[];
+#endif // _USB_DESCRIPTORS_H_
 

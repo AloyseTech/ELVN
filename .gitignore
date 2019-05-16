@@ -1,5 +1,6 @@
 .vs/
 .vscode/
+Debug/
 *.o
 *.d
 *.elf

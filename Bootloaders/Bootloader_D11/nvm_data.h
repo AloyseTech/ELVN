@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2019, Théo Meyer <meyertheopro@gmail.com>
- * Copyright (c) 2016-2017, Alex Taradov <alex@taradov.com>
+ * Copyright (c) 2016, Alex Taradov <alex@taradov.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,61 +26,36 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-MEMORY
-{
-  flash (rx) : ORIGIN = 0x00000000, LENGTH = 0x400 /* Adjust this depending on the enabled feature */
-  ram  (rwx) : ORIGIN = 0x20000000, LENGTH = 4096-4
-}
+#ifndef _NVM_DATA_H_
+#define _NVM_DATA_H_
 
-__top_flash = ORIGIN(flash) + LENGTH(flash);
-__top_ram = ORIGIN(ram) + LENGTH(ram);
+/*- Definitions -------------------------------------------------------------*/
+#define NVM_ADC_LINEARITY_POS        27
+#define NVM_ADC_LINEARITY_SIZE       8
 
-ENTRY(irq_handler_reset)
+#define NVM_ADC_BIASCAL_POS          35
+#define NVM_ADC_BIASCAL_SIZE         3
 
-SECTIONS
-{
-  .text : ALIGN(4)
-  {
-    FILL(0xff)
-    KEEP(*(.vectors))
-    *(.romfunc)
-    *(.romfunc.*)
-    . = ALIGN(4);
-  } > flash
+#define NVM_OSC32K_CAL_POS           38
+#define NVM_OSC32K_CAL_SIZE          7
 
-  . = ALIGN(4);
-  _etext = .;
+#define NVM_USB_TRANSN_POS           45
+#define NVM_USB_TRANSN_SIZE          5
 
-  .uninit_RESERVED : ALIGN(4)
-  {
-    KEEP(*(.bss.$RESERVED*))
-  } > ram
+#define NVM_USB_TRANSP_POS           50
+#define NVM_USB_TRANSP_SIZE          5
 
-  .data : ALIGN(4)
-  {
-    FILL(0xff)
-    _data = .;
-    *(.ram_vectors)
-    *(.text*)
-    *(.rodata)
-    *(.rodata.*)
-    *(vtable)
-    *(.data*)
-    . = ALIGN(4);
-    _edata = .;
-  } > ram AT > flash
+#define NVM_USB_TRIM_POS             55
+#define NVM_USB_TRIM_SIZE            3
 
+#define NVM_DFLL48M_COARSE_CAL_POS   58
+#define NVM_DFLL48M_COARSE_CAL_SIZE  6
 
-  .bss : ALIGN(4)
-  {
-    _bss = .;
-    *(.bss*)
-    *(COMMON)
-    . = ALIGN(4);
-    _ebss = .;
-    PROVIDE(_end = .);
-  } > ram
+#define NVM_DFLL48M_FINE_CAL_POS     64
+#define NVM_DFLL48M_FINE_CAL_SIZE    10
 
-  PROVIDE(_stack_top = __top_ram - 0);
-}
+#define NVM_READ_CAL(cal) \
+    ((*((uint32_t *)NVMCTRL_OTP4 + cal##_POS / 32)) >> (cal##_POS % 32)) & ((1 << cal##_SIZE) - 1)
+
+#endif // _NVM_DATA_H_
 
